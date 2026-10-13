@@ -1,12 +1,30 @@
-# snip-api
+# snip
 
-A URL shortener REST API written in Rust. Users sign up, create short links (random or custom codes, optionally expiring), and get click analytics per link.
+A full-stack URL shortener: a **Rust + Axum** REST API with a **React + TypeScript** dashboard. Users sign up, create short links (random or custom codes, optionally expiring), and get click analytics per link.
 
 ![Rust](https://img.shields.io/badge/Rust-2024-orange?logo=rust)
 ![Axum](https://img.shields.io/badge/Axum-0.8-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-SQLx-lightgrey?logo=sqlite)
+![React](https://img.shields.io/badge/React-19-61dafb?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178c6?logo=typescript)
 
-## Features
+![Link analytics page](docs/link-stats.png)
+
+<p align="center">
+  <img src="docs/dashboard.png" width="49%" alt="Links dashboard" />
+  <img src="docs/sign-in.png" width="49%" alt="Sign-in page" />
+</p>
+
+## Dashboard (`web/`)
+
+- **React 19 + TypeScript + Vite**, styled with **Tailwind CSS v4**
+- **TanStack Query** for server state: caching, pagination and cache updates after mutations
+- **React Router** for the links list and the per-link analytics page
+- A typed API client that mirrors the Rust response types, with automatic sign-out when a token expires
+- A hand-built 30-day click chart with an accessible text summary (no chart library)
+- Responsive down to mobile, with keyboard focus styles and reduced-motion support
+
+## API features
 
 - **JWT authentication**: register and log in. Passwords are hashed with **Argon2id** on a blocking thread so they don't stall the async runtime.
 - **Short links**: random 7-character codes or custom ones (`/rust-book`), optional expiry date, and enable/disable without deleting.
@@ -36,6 +54,16 @@ cargo run
 ```
 
 Then open **http://localhost:8080/docs** to explore and try the API.
+
+In another terminal, start the dashboard (Node 20+):
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open **http://localhost:5173**. In development, Vite proxies `/api` to the Rust server on port 8080.
 
 ### With Docker
 
@@ -126,6 +154,10 @@ src/
 └── routes/          # Handlers: auth, links, redirect, health
 migrations/          # SQL schema
 tests/api.rs         # End-to-end tests against an in-memory DB
+web/                 # React dashboard
+├── src/lib/         # Typed API client, auth context, formatting helpers
+├── src/pages/       # Sign in, links list, link analytics
+└── src/components/  # Layout and shared UI
 ```
 
 ## Testing
@@ -139,6 +171,7 @@ The integration tests build the real router on an in-memory SQLite database and 
 ## Possible next steps
 
 - Rate limiting on redirects and auth endpoints
+- Deploy the API and the dashboard (Fly.io / Vercel)
 - Swap SQLite for PostgreSQL (SQLx makes this mostly a driver change)
 - QR code generation per link
 - Refresh tokens

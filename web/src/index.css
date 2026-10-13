@@ -1,0 +1,88 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/schibsted-grotesk';
+@import '@fontsource-variable/jetbrains-mono';
+
+@theme {
+  --font-sans: 'Schibsted Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --color-fog: #eef1f5;
+  --color-paper: #ffffff;
+  --color-ink: #1b2433;
+  --color-muted: #5a6578;
+  --color-line: #d3d9e3;
+  --color-signal: #2346d8;
+  --color-signal-dark: #1a36ad;
+  --color-tape: #f2c14e;
+  --color-danger: #c2362b;
+}
+
+@layer base {
+  html {
+    @apply bg-fog text-ink font-sans antialiased;
+    font-feature-settings: 'ss01';
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Short codes look like printed label-maker tape: the one bold element of the UI.
+ * The faint vertical stripes mimic the tape's texture; the notched ends mimic the cutter.
+ */
+@layer components {
+  .tape {
+    @apply inline-block font-mono font-semibold text-ink whitespace-nowrap;
+    background:
+      repeating-linear-gradient(90deg, rgb(0 0 0 / 0.025) 0 1px, transparent 1px 3px),
+      var(--color-tape);
+    padding: 0.2em 0.85em;
+    clip-path: polygon(
+      0 0, 100% 0, calc(100% - 0.3em) 50%, 100% 100%, 0 100%, 0.3em 50%
+    );
+    box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.08);
+    letter-spacing: 0.02em;
+  }
+
+  .tape-hero {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    padding: 0.15em 0.7em;
+    transform: rotate(-1.5deg);
+  }
+
+  .field {
+    @apply w-full rounded-md border border-line bg-paper px-3 py-2.5 text-ink placeholder:text-muted/70;
+    @apply focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20;
+  }
+
+  .btn-primary,
+  .btn-quiet,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 font-medium transition-colors;
+    @apply disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply bg-signal text-white hover:bg-signal-dark;
+  }
+
+  .btn-quiet {
+    @apply border border-line bg-paper text-ink hover:border-ink/40;
+  }
+
+  .btn-danger {
+    @apply border border-danger/40 bg-paper text-danger hover:bg-danger hover:text-white;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
