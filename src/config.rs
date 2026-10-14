@@ -11,6 +11,8 @@ pub struct Config {
     pub port: u16,
     /// Directory with the built dashboard (`web/dist`). When set, the API also serves it.
     pub static_dir: Option<String>,
+    /// Seed a demo account on startup and expose its credentials at `/api/demo`.
+    pub demo_mode: bool,
 }
 
 impl Config {
@@ -25,12 +27,15 @@ impl Config {
             database_url: env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://snip.db".into()),
             jwt_secret,
             jwt_ttl_hours: parse_or("JWT_TTL_HOURS", 24)?,
+            // Render sets RENDER_EXTERNAL_URL to the service's public URL.
             base_url: env::var("BASE_URL")
+                .or_else(|_| env::var("RENDER_EXTERNAL_URL"))
                 .unwrap_or_else(|_| "http://localhost:8080".into())
                 .trim_end_matches('/')
                 .to_string(),
             port: parse_or("PORT", 8080)?,
             static_dir: env::var("STATIC_DIR").ok().filter(|dir| !dir.is_empty()),
+            demo_mode: parse_or("DEMO_MODE", false)?,
         })
     }
 }

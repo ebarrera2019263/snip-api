@@ -3,6 +3,7 @@
 pub mod auth;
 pub mod config;
 pub mod db;
+pub mod demo;
 pub mod docs;
 pub mod error;
 pub mod extract;
@@ -53,7 +54,8 @@ pub fn app(state: AppState) -> Router {
                 .patch(routes::links::update)
                 .delete(routes::links::delete),
         )
-        .route("/links/{id}/stats", get(routes::links::stats));
+        .route("/links/{id}/stats", get(routes::links::stats))
+        .route("/demo", get(routes::demo_account));
 
     let mut router = Router::new()
         .nest("/api", api)

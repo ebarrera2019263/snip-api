@@ -77,14 +77,13 @@ docker run -p 8080:8080 -v snip-data:/data \
 
 Open http://localhost:8080 for the dashboard and http://localhost:8080/docs for the API docs.
 
-### Deploying to Railway
+### Deploying to Render (free)
 
-The repo includes `railway.json` (Dockerfile build + `/health` check).
+The repo includes a `render.yaml` Blueprint: **New → Blueprint → pick this repo**. Render builds the Dockerfile, generates `JWT_SECRET`, and turns on `DEMO_MODE`.
 
-1. New project → **Deploy from GitHub repo** → pick this repo.
-2. Add a **volume** mounted at `/data` so the SQLite database survives redeploys.
-3. Set the variables `JWT_SECRET` (`openssl rand -hex 32`), `BASE_URL` (the public URL, e.g. `https://snip.up.railway.app`) and `RAILWAY_RUN_UID=0` (Railway volumes are owned by root).
-4. Under **Networking**, generate a public domain.
+Free instances have no persistent disk, so the database resets when the service restarts. Demo mode seeds a sample account (with links and 30 days of clicks) on every boot, and the sign-in page offers a one-click **Try the demo account** button.
+
+For persistent data, use a paid instance or Railway (`railway.json` is included) with a volume mounted at `/data`.
 
 ## Configuration
 
@@ -92,10 +91,11 @@ The repo includes `railway.json` (Dockerfile build + `/health` check).
 | --------------- | ------------------------ | --------------------------------------------- |
 | `JWT_SECRET`    | required (≥ 32 chars)    | Key used to sign tokens                       |
 | `DATABASE_URL`  | `sqlite://snip.db`       | SQLite file (created if missing)              |
-| `BASE_URL`      | `http://localhost:8080`  | Public URL used to build `short_url`          |
+| `BASE_URL`      | `RENDER_EXTERNAL_URL` or `http://localhost:8080` | Public URL used to build `short_url` |
 | `PORT`          | `8080`                   | Listening port                                |
 | `JWT_TTL_HOURS` | `24`                     | Token lifetime                                |
 | `STATIC_DIR`    | unset (`/app/web` in Docker) | Serve the built dashboard from this folder |
+| `DEMO_MODE`     | `false`                  | Seed a demo account and expose `/api/demo`    |
 | `RUST_LOG`      | `snip_api=info,...`      | Log filter                                    |
 
 ## API

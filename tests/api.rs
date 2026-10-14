@@ -27,6 +27,7 @@ async fn test_app_with_static(static_dir: Option<String>) -> Router {
         base_url: BASE_URL.into(),
         port: 0,
         static_dir,
+        demo_mode: false,
     };
     let pool = db::connect(&config.database_url).await.unwrap();
     app(AppState {
@@ -409,4 +410,68 @@ async fn serves_dashboard_alongside_short_links() {
     assert_eq!(status, StatusCode::OK);
 
     std::fs::remove_dir_all(dir).ok();
+}
+
+#[tokio::test]
+async fn demo_account_is_seeded_once_and_hidden_when_off() {
+    let config = Config {
+        database_url: "sqlite::memory:".into(),
+        jwt_secret: "test-secret-that-is-at-least-32-characters".into(),
+        jwt_ttl_hours: 1,
+        base_url: BASE_URL.into(),
+        port: 0,
+        static_dir: None,
+        demo_mode: true,
+    };
+    let pool = db::connect(&config.database_url).await.unwrap();
+    snip_api::demo::seed(&pool).await.unwrap();
+    // Seeding is idempotent: a second boot must not duplicate data.
+    snip_api::demo::seed(&pool).await.unwrap();
+    let app = app(AppState {
+        db: pool,
+        config: Arc::new(config),
+    });
+
+    let (status, _, creds) = send(&app, "GET", "/api/demo", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, _, auth) = send(&app, "POST", "/api/auth/login", None, Some(creds)).await;
+    assert_eq!(status, StatusCode::OK);
+    let token = auth["token"].as_str().unwrap();
+
+    let (_, _, page) = send(&app, "GET", "/api/links", Some(token), None).await;
+    assert_eq!(page["total"], 5);
+    assert_eq!(page["items"][0]["code"], "react-learn");
+
+    let rust_book = page["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|l| l["code"] == "rust-book")
+        .unwrap();
+    let id = rust_book["id"].as_i64().unwrap();
+    let (_, _, stats) = send(
+        &app,
+        "GET",
+        &format!("/api/links/{id}/stats"),
+        Some(token),
+        None,
+    )
+    .await;
+    assert_eq!(stats["total_clicks"], 140);
+    let daily_sum: i64 = stats["daily"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| d["clicks"].as_i64().unwrap())
+        .sum();
+    assert_eq!(
+        daily_sum, 140,
+        "all demo clicks fall within the last 30 days"
+    );
+
+    // With demo mode off, the endpoint doesn't exist.
+    let app = test_app().await;
+    let (status, _, _) = send(&app, "GET", "/api/demo", None, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
 }

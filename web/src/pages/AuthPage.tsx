@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Wordmark } from '../components/Layout'
@@ -15,6 +15,12 @@ export function AuthPage() {
   const submit = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       mode === 'login' ? api.login(email, password) : api.register(email, password),
+    onSuccess: signIn,
+  })
+
+  const demo = useQuery({ queryKey: ['demo'], queryFn: api.demoAccount, retry: false, staleTime: Infinity })
+  const demoLogin = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) => api.login(email, password),
     onSuccess: signIn,
   })
 
@@ -56,6 +62,21 @@ export function AuthPage() {
 
       <section className="flex items-center justify-center px-6 py-12">
         <form onSubmit={onSubmit} className="w-full max-w-sm space-y-5">
+          {demo.data && (
+            <div className="space-y-3 rounded-md border border-line bg-paper p-4">
+              <p className="text-sm text-muted">Just looking? Open a sample account that already has links and 30 days of clicks.</p>
+              <button
+                type="button"
+                disabled={demoLogin.isPending}
+                onClick={() => demoLogin.mutate(demo.data)}
+                className="btn-quiet w-full"
+              >
+                {demoLogin.isPending ? 'Opening…' : 'Try the demo account'}
+              </button>
+              <ErrorText error={demoLogin.error} />
+            </div>
+          )}
+
           <h1 className="text-2xl font-semibold">{isLogin ? 'Sign in' : 'Create an account'}</h1>
 
           <label className="block space-y-1.5">

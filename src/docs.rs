@@ -13,6 +13,7 @@ use crate::{error, models, routes};
     ),
     paths(
         routes::health,
+        routes::demo_account,
         routes::auth::register,
         routes::auth::login,
         routes::auth::me,

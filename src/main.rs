@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use snip_api::{app, config::Config, db, state::AppState};
+use snip_api::{app, config::Config, db, demo, state::AppState};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -19,6 +19,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::from_env()?;
     let pool = db::connect(&config.database_url).await?;
     tracing::info!("database ready, migrations applied");
+
+    if config.demo_mode {
+        demo::seed(&pool).await?;
+        tracing::info!(email = demo::EMAIL, "demo mode on");
+    }
 
     let port = config.port;
     let state = AppState {

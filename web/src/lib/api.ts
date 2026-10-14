@@ -112,6 +112,8 @@ export const api = {
   login: (email: string, password: string) =>
     request<AuthResponse>('POST', '/api/auth/login', { email, password }),
   me: () => request<User>('GET', '/api/auth/me'),
+  /** Demo credentials; 404 unless the server runs with DEMO_MODE=true. */
+  demoAccount: () => request<{ email: string; password: string }>('GET', '/api/demo'),
 
   listLinks: (page: number, perPage = 20) =>
     request<LinkPage>('GET', `/api/links?page=${page}&per_page=${perPage}`),
