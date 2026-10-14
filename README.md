@@ -2,6 +2,10 @@
 
 A full-stack URL shortener: a **Rust + Axum** REST API with a **React + TypeScript** dashboard. Users sign up, create short links (random or custom codes, optionally expiring), and get click analytics per link.
 
+**Live demo:** https://snip-7xkv.onrender.com (click *Try the demo account*) · **API docs:** https://snip-7xkv.onrender.com/docs
+
+> Hosted on Render's free tier: the first visit after a while can take up to a minute while the server wakes up.
+
 ![Rust](https://img.shields.io/badge/Rust-2024-orange?logo=rust)
 ![Axum](https://img.shields.io/badge/Axum-0.8-blue)
 ![SQLite](https://img.shields.io/badge/SQLite-SQLx-lightgrey?logo=sqlite)
