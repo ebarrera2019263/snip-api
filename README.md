@@ -67,11 +67,24 @@ Open **http://localhost:5173**. In development, Vite proxies `/api` to the Rust 
 
 ### With Docker
 
+The image builds both the API and the dashboard, and serves everything from one port:
+
 ```bash
-docker build -t snip-api .
+docker build -t snip .
 docker run -p 8080:8080 -v snip-data:/data \
-  -e JWT_SECRET=$(openssl rand -hex 32) snip-api
+  -e JWT_SECRET=$(openssl rand -hex 32) snip
 ```
+
+Open http://localhost:8080 for the dashboard and http://localhost:8080/docs for the API docs.
+
+### Deploying to Railway
+
+The repo includes `railway.json` (Dockerfile build + `/health` check).
+
+1. New project → **Deploy from GitHub repo** → pick this repo.
+2. Add a **volume** mounted at `/data` so the SQLite database survives redeploys.
+3. Set the variables `JWT_SECRET` (`openssl rand -hex 32`), `BASE_URL` (the public URL, e.g. `https://snip.up.railway.app`) and `RAILWAY_RUN_UID=0` (Railway volumes are owned by root).
+4. Under **Networking**, generate a public domain.
 
 ## Configuration
 
@@ -82,6 +95,7 @@ docker run -p 8080:8080 -v snip-data:/data \
 | `BASE_URL`      | `http://localhost:8080`  | Public URL used to build `short_url`          |
 | `PORT`          | `8080`                   | Listening port                                |
 | `JWT_TTL_HOURS` | `24`                     | Token lifetime                                |
+| `STATIC_DIR`    | unset (`/app/web` in Docker) | Serve the built dashboard from this folder |
 | `RUST_LOG`      | `snip_api=info,...`      | Log filter                                    |
 
 ## API
@@ -171,7 +185,6 @@ The integration tests build the real router on an in-memory SQLite database and 
 ## Possible next steps
 
 - Rate limiting on redirects and auth endpoints
-- Deploy the API and the dashboard (Fly.io / Vercel)
 - Swap SQLite for PostgreSQL (SQLx makes this mostly a driver change)
 - QR code generation per link
 - Refresh tokens

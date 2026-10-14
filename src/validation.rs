@@ -5,7 +5,14 @@ use std::borrow::Cow;
 use validator::ValidationError;
 
 /// Paths the router already uses, so they can't be claimed as short codes.
-const RESERVED_CODES: &[&str] = &["api", "docs", "health", "openapi.json"];
+const RESERVED_CODES: &[&str] = &[
+    "api",
+    "assets",
+    "docs",
+    "favicon.svg",
+    "health",
+    "openapi.json",
+];
 
 fn error(code: &'static str, message: &'static str) -> ValidationError {
     ValidationError::new(code).with_message(Cow::Borrowed(message))

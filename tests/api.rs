@@ -16,12 +16,17 @@ use tower::ServiceExt;
 const BASE_URL: &str = "http://sn.ip";
 
 async fn test_app() -> Router {
+    test_app_with_static(None).await
+}
+
+async fn test_app_with_static(static_dir: Option<String>) -> Router {
     let config = Config {
         database_url: "sqlite::memory:".into(),
         jwt_secret: "test-secret-that-is-at-least-32-characters".into(),
         jwt_ttl_hours: 1,
         base_url: BASE_URL.into(),
         port: 0,
+        static_dir,
     };
     let pool = db::connect(&config.database_url).await.unwrap();
     app(AppState {
@@ -368,4 +373,40 @@ async fn serves_openapi_docs() {
 
     let (status, _, _) = send(&app, "GET", "/docs", None, None).await;
     assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn serves_dashboard_alongside_short_links() {
+    let dir = std::env::temp_dir().join(format!("snip-static-{}", std::process::id()));
+    std::fs::create_dir_all(dir.join("assets")).unwrap();
+    std::fs::write(dir.join("index.html"), "<!doctype html><title>snip</title>").unwrap();
+    std::fs::write(dir.join("assets/app.js"), "console.log(1)").unwrap();
+
+    let app = test_app_with_static(Some(dir.to_string_lossy().into_owned())).await;
+
+    for uri in ["/", "/links/42", "/assets/app.js"] {
+        let res = app
+            .clone()
+            .oneshot(Request::builder().uri(uri).body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK, "{uri}");
+    }
+
+    // Short links still redirect, and the API still answers.
+    let token = register(&app, "frank@example.com").await;
+    create_link(
+        &app,
+        &token,
+        json!({ "target_url": "https://example.com", "code": "promo" }),
+    )
+    .await;
+    let (status, headers, _) = send(&app, "GET", "/promo", None, None).await;
+    assert_eq!(status, StatusCode::TEMPORARY_REDIRECT);
+    assert_eq!(headers[header::LOCATION], "https://example.com");
+
+    let (status, _, _) = send(&app, "GET", "/health", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+
+    std::fs::remove_dir_all(dir).ok();
 }

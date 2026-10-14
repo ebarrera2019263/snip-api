@@ -9,6 +9,8 @@ pub struct Config {
     /// Public base URL used to build short links, without trailing slash.
     pub base_url: String,
     pub port: u16,
+    /// Directory with the built dashboard (`web/dist`). When set, the API also serves it.
+    pub static_dir: Option<String>,
 }
 
 impl Config {
@@ -28,6 +30,7 @@ impl Config {
                 .trim_end_matches('/')
                 .to_string(),
             port: parse_or("PORT", 8080)?,
+            static_dir: env::var("STATIC_DIR").ok().filter(|dir| !dir.is_empty()),
         })
     }
 }

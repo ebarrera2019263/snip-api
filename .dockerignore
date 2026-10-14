@@ -3,3 +3,6 @@ target
 *.db
 *.db-*
 .git
+web/node_modules
+web/dist
+docs
