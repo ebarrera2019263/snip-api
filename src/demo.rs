@@ -17,6 +17,8 @@ struct DemoLink {
     target_url: &'static str,
     clicks: u32,
     is_active: bool,
+    /// How long ago the link was created; its clicks all happen after that.
+    age_hours: i64,
 }
 
 const LINKS: &[DemoLink] = &[
@@ -25,30 +27,35 @@ const LINKS: &[DemoLink] = &[
         target_url: "https://react.dev/learn",
         clicks: 0,
         is_active: true,
+        age_hours: 3,
     },
     DemoLink {
         code: "tokio-spawn",
         target_url: "https://tokio.rs/tokio/tutorial/spawning",
         clicks: 22,
         is_active: false,
+        age_hours: 269,
     },
     DemoLink {
         code: "axum",
         target_url: "https://docs.rs/axum/latest/axum/",
         clicks: 35,
         is_active: true,
+        age_hours: 458,
     },
     DemoLink {
         code: "source",
         target_url: "https://github.com/ebarrera2019263/snip-api",
         clicks: 60,
         is_active: true,
+        age_hours: 631,
     },
     DemoLink {
         code: "rust-book",
         target_url: "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html",
         clicks: 140,
         is_active: true,
+        age_hours: 796,
     },
 ];
 
@@ -110,8 +117,10 @@ pub async fn seed(pool: &SqlitePool) -> AppResult<()> {
     .await?;
 
     // Inserted oldest first so the newest link shows on top of the list.
-    for (i, link) in LINKS.iter().rev().enumerate() {
-        let created_at = now - Duration::days(34 - i as i64);
+    for link in LINKS.iter().rev() {
+        let created_at = now - Duration::hours(link.age_hours);
+        // Clicks stay inside the 30-day window the stats chart shows.
+        let age_days = (link.age_hours / 24).min(29);
         let link_id: i64 = sqlx::query_scalar(
             "INSERT INTO links
                 (user_id, code, target_url, is_active, click_count, created_at, updated_at)
@@ -129,13 +138,16 @@ pub async fn seed(pool: &SqlitePool) -> AppResult<()> {
 
         for _ in 0..link.clicks {
             // Mostly recent clicks, plus a spike six days ago (a "launch post").
-            let days_ago = if rng.below(4) == 0 {
+            let days_ago = if rng.below(4) == 0 && age_days > 6 {
                 6
             } else {
-                (rng.unit().powi(2) * 30.0) as i64
+                (rng.unit().powi(2) * age_days as f64) as i64
             };
-            let clicked_at =
-                now - Duration::days(days_ago) - Duration::seconds(rng.below(80_000) as i64);
+            // Within the day, but never before the link existed.
+            let max_secs = (link.age_hours * 3600 - days_ago * 86_400).clamp(1, 80_000);
+            let clicked_at = now
+                - Duration::days(days_ago)
+                - Duration::seconds(rng.below(max_secs as u64) as i64);
 
             let mut pick = rng.below(referrer_total);
             let referrer = REFERRERS

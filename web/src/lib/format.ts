@@ -17,8 +17,14 @@ export function timeAgo(iso: string, now = Date.now()): string {
   return 'just now'
 }
 
+/** In UTC, matching the days the API groups clicks by in the stats chart. */
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
 }
 
 /** "doc.rust-lang.org/book" — the readable part of a URL. */

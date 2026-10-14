@@ -352,6 +352,27 @@ async fn disabled_and_expired_links_return_gone() {
     assert_eq!(status, StatusCode::GONE);
     assert_eq!(body["error"]["code"], "gone");
 
+    // Browsers get a readable page instead of JSON, for dead and unknown links.
+    for (uri, status, text) in [
+        ("/paused", StatusCode::GONE, "no longer available"),
+        ("/missing", StatusCode::NOT_FOUND, "doesn't exist"),
+    ] {
+        let req = Request::get(uri)
+            .header(header::ACCEPT, "text/html,application/xhtml+xml")
+            .body(Body::empty())
+            .unwrap();
+        let res = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(res.status(), status);
+        assert!(
+            res.headers()[header::CONTENT_TYPE]
+                .to_str()
+                .unwrap()
+                .starts_with("text/html")
+        );
+        let bytes = res.into_body().collect().await.unwrap().to_bytes();
+        assert!(String::from_utf8_lossy(&bytes).contains(text));
+    }
+
     // Expiry dates must be in the future when creating.
     let (status, _, _) = send(
         &app,
